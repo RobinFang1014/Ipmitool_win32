@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{9C84347A-FB1B-4863-910F-BE3901CD7FB6}</ProjectGuid>
+    <RootNamespace>ipmitoolwindows</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ipmitool</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;HAVE_CONFIG_H=1;IPMI_INTF_WMI=1;IPMI_INTF_LAN=1;IPMI_INTF_LANPLUS=1;ENABLE_ALL_OPTIONS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)compat;$(ProjectDir)compat\include;$(ProjectDir)src\plugins\lan;$(ProjectDir)src\plugins\lanplus;$(ProjectDir)src\plugins\wmi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)compat\msvc_compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4996;4267;4244;4018;4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;Bcrypt.lib;Wbemuuid.lib;Ole32.lib;OleAut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;HAVE_CONFIG_H=1;IPMI_INTF_WMI=1;IPMI_INTF_LAN=1;IPMI_INTF_LANPLUS=1;ENABLE_ALL_OPTIONS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)compat;$(ProjectDir)compat\include;$(ProjectDir)src\plugins\lan;$(ProjectDir)src\plugins\lanplus;$(ProjectDir)src\plugins\wmi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)compat\msvc_compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4996;4267;4244;4018;4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;Bcrypt.lib;Wbemuuid.lib;Ole32.lib;OleAut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="compat\getopt.c" />
+    <ClCompile Include="src\ipmitool.c" />
+    <ClCompile Include="src\ipmishell.c" />
+    <ClCompile Include="src\plugins\ipmi_intf.c" />
+    <ClCompile Include="src\plugins\lan\auth.c" />
+    <ClCompile Include="src\plugins\lan\lan.c" />
+    <ClCompile Include="src\plugins\lan\md5.c" />
+    <ClCompile Include="src\plugins\lanplus\lanplus.c" />
+    <ClCompile Include="src\plugins\lanplus\lanplus_crypt.c" />
+    <ClCompile Include="src\plugins\lanplus\lanplus_crypt_impl.c" />
+    <ClCompile Include="src\plugins\lanplus\lanplus_dump.c" />
+    <ClCompile Include="src\plugins\lanplus\lanplus_strings.c" />
+    <ClCompile Include="lib\dimm_spd.c" />
+    <ClCompile Include="lib\helper.c" />
+    <ClCompile Include="lib\hpm2.c" />
+    <ClCompile Include="lib\ipmi_cfgp.c" />
+    <ClCompile Include="lib\ipmi_channel.c" />
+    <ClCompile Include="lib\ipmi_chassis.c" />
+    <ClCompile Include="lib\ipmi_dcmi.c" />
+    <ClCompile Include="lib\ipmi_delloem.c" />
+    <ClCompile Include="lib\ipmi_ekanalyzer.c" />
+    <ClCompile Include="lib\ipmi_event.c" />
+    <ClCompile Include="lib\ipmi_firewall.c" />
+    <ClCompile Include="lib\ipmi_fru.c" />
+    <ClCompile Include="lib\ipmi_fwum.c" />
+    <ClCompile Include="lib\ipmi_gendev.c" />
+    <ClCompile Include="lib\ipmi_hpmfwupg.c" />
+    <ClCompile Include="lib\ipmi_ime.c" />
+    <ClCompile Include="lib\ipmi_kontronoem.c" />
+    <ClCompile Include="lib\ipmi_lanp.c" />
+    <ClCompile Include="lib\ipmi_lanp6.c" />
+    <ClCompile Include="lib\ipmi_main.c" />
+    <ClCompile Include="lib\ipmi_mc.c" />
+    <ClCompile Include="lib\ipmi_oem.c" />
+    <ClCompile Include="lib\ipmi_pef.c" />
+    <ClCompile Include="lib\ipmi_picmg.c" />
+    <ClCompile Include="lib\ipmi_quantaoem.c" />
+    <ClCompile Include="lib\ipmi_raw.c" />
+    <ClCompile Include="lib\ipmi_sdr.c" />
+    <ClCompile Include="lib\ipmi_sdradd.c" />
+    <ClCompile Include="lib\ipmi_sel.c" />
+    <ClCompile Include="lib\ipmi_sensor.c" />
+    <ClCompile Include="lib\ipmi_session.c" />
+    <ClCompile Include="lib\ipmi_sol.c" />
+    <ClCompile Include="lib\ipmi_strings.c" />
+    <ClCompile Include="lib\ipmi_time.c" />
+    <ClCompile Include="lib\ipmi_user.c" />
+    <ClCompile Include="lib\ipmi_vita.c" />
+    <ClCompile Include="lib\log.c" />
+    <ClCompile Include="src\plugins\wmi\wmibmc.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\config.h" />
+    <ClInclude Include="compat\msvc_compat.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="enterprise-numbers.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
