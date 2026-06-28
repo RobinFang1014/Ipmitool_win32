@@ -63,3 +63,11 @@ The Windows build embeds this file as a resource so the executable can load the 
 https://www.iana.org/assignments/enterprise-numbers/
 
 Windows 版本會將此檔案內嵌成 resource，讓執行檔不需要外部文字檔也能讀取 registry data。
+
+## Rights Concerns / 權利疑慮
+
+This repository is intended to preserve the original ipmitool license and attribution.
+If you believe any content in this repository violates your rights or has incorrect attribution, please open a GitHub Issue with details. I will review the concern promptly and remove, replace, or correct the affected content as appropriate.
+
+本 repository 旨在保留原始 ipmitool 的授權與來源標註。
+如果您認為此 repository 中有任何內容涉及權利疑慮或來源標註不正確，請透過 GitHub Issue 提供詳細資訊。我會盡快確認，並視情況移除、替換或修正相關內容。
