@@ -900,6 +900,45 @@ ipmi_open_file_bin(const char * file, int rw)
 	return ipmi_open_file_mode(file, rw, 1);
 }
 
+/* Interrupt flag for Ctrl+C on Windows.
+ *
+ * The Windows console runs the Ctrl+C handler on a new thread while the
+ * main thread keeps running, so the handler must not touch the socket or
+ * the session. It only sets this flag (see ipmi_main.c); the interface
+ * code checks it, stops waiting and returns, and the main thread then
+ * closes the session itself. On POSIX the flag is never set: SIGINT is
+ * handled by ipmi_catch_sigint() as before.
+ */
+#ifdef _WIN32
+static volatile LONG ipmi_interrupted_flag = 0;
+
+int
+ipmi_is_interrupted(void)
+{
+	return InterlockedCompareExchange(&ipmi_interrupted_flag, 0, 0) != 0;
+}
+
+void
+ipmi_set_interrupted(int on)
+{
+	InterlockedExchange(&ipmi_interrupted_flag, on ? 1 : 0);
+}
+#else
+static volatile int ipmi_interrupted_flag = 0;
+
+int
+ipmi_is_interrupted(void)
+{
+	return ipmi_interrupted_flag != 0;
+}
+
+void
+ipmi_set_interrupted(int on)
+{
+	ipmi_interrupted_flag = on ? 1 : 0;
+}
+#endif
+
 void
 ipmi_start_daemon(struct ipmi_intf *intf)
 {

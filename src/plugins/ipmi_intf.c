@@ -54,6 +54,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/log.h>
+#include <ipmitool/helper.h>
 
 #define IPMI_DEFAULT_PAYLOAD_SIZE   25
 
@@ -352,6 +353,63 @@ ipmi_cleanup(struct ipmi_intf * intf)
 }
 
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
+/* ipmi_intf_socket_wait  -  wait until intf->fd has data to read
+ *
+ * @intf:	interface with an open socket
+ * @timeout_sec:	how long to wait
+ *
+ * On Windows the wait is done in 100 ms steps and stops early when
+ * Ctrl+C was pressed (ipmi_is_interrupted()), so the main thread can
+ * close the session right away instead of waiting for all retries.
+ *
+ * returns 1 if data can be read, 0 on timeout, -1 on error or interrupt
+ */
+int
+ipmi_intf_socket_wait(struct ipmi_intf * intf, int timeout_sec)
+{
+	fd_set read_set, err_set;
+	struct timeval tmout;
+	int ret;
+#ifdef _WIN32
+	long left_ms = (long)timeout_sec * 1000;
+
+	do {
+		long step_ms = (left_ms < 100) ? left_ms : 100;
+
+		if (ipmi_is_interrupted())
+			return -1;
+
+		FD_ZERO(&read_set);
+		IPMI_FD_SET_SOCKET(intf->fd, &read_set);
+		FD_ZERO(&err_set);
+		IPMI_FD_SET_SOCKET(intf->fd, &err_set);
+		tmout.tv_sec = step_ms / 1000;
+		tmout.tv_usec = (step_ms % 1000) * 1000;
+
+		/* the first select() argument is ignored by Winsock */
+		ret = select(0, &read_set, NULL, &err_set, &tmout);
+		if (ret < 0)
+			return -1;
+		if (ret > 0)
+			return IPMI_FD_ISSET_SOCKET(intf->fd, &read_set) ? 1 : 0;
+		left_ms -= step_ms;
+	} while (left_ms > 0);
+	return 0;
+#else
+	FD_ZERO(&read_set);
+	FD_SET(intf->fd, &read_set);
+	FD_ZERO(&err_set);
+	FD_SET(intf->fd, &err_set);
+	tmout.tv_sec = timeout_sec;
+	tmout.tv_usec = 0;
+
+	ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
+	if (ret < 0)
+		return -1;
+	return FD_ISSET(intf->fd, &read_set) ? 1 : 0;
+#endif
+}
+
 int
 ipmi_intf_socket_connect(struct ipmi_intf * intf)
 {

@@ -257,22 +257,10 @@ static struct ipmi_rs *
 ipmi_lan_recv_packet(struct ipmi_intf * intf)
 {
 	static struct ipmi_rs rsp;
-	fd_set read_set;
-	fd_set err_set;
-	struct timeval tmout;
 	int ret;
 
-	FD_ZERO(&read_set);
-	IPMI_FD_SET_SOCKET(intf->fd, &read_set);
-
-	FD_ZERO(&err_set);
-	IPMI_FD_SET_SOCKET(intf->fd, &err_set);
-
-	tmout.tv_sec = intf->ssn_params.timeout;
-	tmout.tv_usec = 0;
-
-	ret = select(0, &read_set, NULL, &err_set, &tmout);
-	if (ret < 0 || !IPMI_FD_ISSET_SOCKET(intf->fd, &read_set))
+	/* returns early on Ctrl+C (Windows), see ipmi_intf_socket_wait() */
+	if (ipmi_intf_socket_wait(intf, intf->ssn_params.timeout) <= 0)
 		return NULL;
 
 	/* the first read may return ECONNREFUSED because the rmcp ping
@@ -288,17 +276,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	ret = ipmi_socket_recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 
 	if (ret < 0) {
-		FD_ZERO(&read_set);
-		IPMI_FD_SET_SOCKET(intf->fd, &read_set);
-
-		FD_ZERO(&err_set);
-		IPMI_FD_SET_SOCKET(intf->fd, &err_set);
-
-		tmout.tv_sec = intf->ssn_params.timeout;
-		tmout.tv_usec = 0;
-
-		ret = select(0, &read_set, NULL, &err_set, &tmout);
-		if (ret < 0 || !IPMI_FD_ISSET_SOCKET(intf->fd, &read_set))
+		if (ipmi_intf_socket_wait(intf, intf->ssn_params.timeout) <= 0)
 			return NULL;
 
 		ret = ipmi_socket_recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
@@ -924,6 +902,10 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	for (;;) {
+		/* Ctrl+C (Windows): stop retrying, let the main thread close */
+		if (ipmi_is_interrupted())
+			break;
+
 		isRetry = ( try > 0 ) ? 1 : 0;
 
 		entry = ipmi_lan_build_cmd(intf, req, isRetry);
@@ -1150,6 +1132,10 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 	lprintf(LOG_DEBUG, ">> SENDING A SOL MESSAGE\n");
 
 	for (;;) {
+		/* Ctrl+C (Windows): stop retrying, let the main thread close */
+		if (ipmi_is_interrupted())
+			break;
+
 		if (ipmi_lan_send_packet(intf, msg, len) < 0) {
 			try++;
 			usleep(5000);
