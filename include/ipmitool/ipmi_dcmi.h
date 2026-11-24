@@ -104,6 +104,16 @@ struct dcmi_cmd {
     const char * desc;
 };
 
+/*
+ * The structs below are copied straight to/from IPMI message data, so they
+ * must have no padding. __attribute__((packed)) only works on GCC/Clang
+ * (msvc_compat.h defines __attribute__ away), so also use #pragma pack.
+ * The _Static_assert checks after the structs catch any layout change.
+ */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(push, 1)
+#endif
+
 /* make a struct for the return from the get limit command */
 struct power_limit {
     uint8_t grp_id; /* first byte: Group Extension ID */
@@ -263,5 +273,28 @@ struct nm_suspend {
     uint8_t  count;
     struct nm_period period[IPMI_NM_SUSPEND_PERIOD_MAX];
 } __attribute__ ((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(pop)
+#endif
+
+/* Sizes are the wire sizes from the DCMI 1.5 / Intel NM 2.0 specs. */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(sizeof(struct power_limit) == 14, "power_limit must be packed");
+_Static_assert(sizeof(struct power_reading) == 18, "power_reading must be packed");
+_Static_assert(sizeof(struct capabilities) == 8, "capabilities must be packed");
+_Static_assert(sizeof(struct sensor_info) == 3, "sensor_info must be packed");
+_Static_assert(sizeof(struct asset_tag) == 18, "asset_tag must be packed");
+_Static_assert(sizeof(struct thermal_limit) == 5, "thermal_limit must be packed");
+_Static_assert(sizeof(struct nm_discover) == 8, "nm_discover must be packed");
+_Static_assert(sizeof(struct nm_capability) == 21, "nm_capability must be packed");
+_Static_assert(sizeof(struct nm_statistics) == 20, "nm_statistics must be packed");
+_Static_assert(sizeof(struct nm_policy) == 17, "nm_policy must be packed");
+_Static_assert(sizeof(struct nm_get_policy) == 16, "nm_get_policy must be packed");
+_Static_assert(sizeof(struct nm_set_alert) == 6, "nm_set_alert must be packed");
+_Static_assert(sizeof(struct nm_thresh) == IPMI_NM_SET_THRESH_LEN, "nm_thresh must be packed");
+_Static_assert(sizeof(struct nm_period) == 3, "nm_period must be packed");
+_Static_assert(sizeof(struct nm_suspend) == 21, "nm_suspend must be packed");
+#endif
 
 int ipmi_nm_main(struct ipmi_intf * intf, int argc, char ** argv);
