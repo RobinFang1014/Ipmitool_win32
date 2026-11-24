@@ -122,7 +122,7 @@ struct HpmfwupgComponentBitMask {
 	} ATTRIBUTE_PACKING ComponentBits;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 
@@ -141,7 +141,7 @@ struct HpmfwupgGetTargetUpgCapabilitiesReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -181,7 +181,7 @@ struct HpmfwupgGetTargetUpgCapabilitiesResp {
 	struct HpmfwupgComponentBitMask componentsPresent;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -192,7 +192,7 @@ struct HpmfwupgGetTargetUpgCapabilitiesCtx {
 	struct HpmfwupgGetTargetUpgCapabilitiesResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* COMPONENT PROPERTIES DEFINITIONS */
@@ -215,7 +215,7 @@ struct HpmfwupgGetComponentPropertiesReq {
 	unsigned char selector;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -245,7 +245,7 @@ struct HpmfwupgGetGeneralPropResp {
 	} ATTRIBUTE_PACKING GeneralCompProperties;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -256,7 +256,7 @@ struct HpmfwupgGetCurrentVersionResp {
 	unsigned char currentVersion[HPMFWUPG_VERSION_SIZE];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -267,7 +267,7 @@ struct HpmfwupgGetDescStringResp {
 	char descString[HPMFWUPG_DESC_STRING_LENGTH];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -278,7 +278,7 @@ struct HpmfwupgGetRollbackFwVersionResp {
 	unsigned char rollbackFwVersion[HPMFWUPG_VERSION_SIZE];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -289,7 +289,7 @@ struct HpmfwupgGetDeferredFwVersionResp {
 	unsigned char deferredFwVersion[HPMFWUPG_VERSION_SIZE];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* GetComponentProperties - OEM properties (192) */
@@ -302,7 +302,7 @@ struct HpmfwupgGetOemProperties {
 	unsigned char oemRspData[HPMFWUPG_OEM_LENGTH];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -319,7 +319,7 @@ struct HpmfwupgGetComponentPropertiesResp {
 	} ATTRIBUTE_PACKING Response;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -330,7 +330,7 @@ struct HpmfwupgGetComponentPropertiesCtx {
 	struct HpmfwupgGetComponentPropertiesResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /*  ABORT UPGRADE DEFINITIONS */
@@ -341,7 +341,7 @@ struct HpmfwupgAbortUpgradeReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -351,7 +351,7 @@ struct HpmfwupgAbortUpgradeResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -362,7 +362,7 @@ struct HpmfwupgAbortUpgradeCtx {
 	struct HpmfwupgAbortUpgradeResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* UPGRADE ACTIONS DEFINITIONS */
@@ -383,7 +383,7 @@ struct HpmfwupgInitiateUpgradeActionReq {
 	unsigned char upgradeAction;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -393,7 +393,7 @@ struct HpmfwupgInitiateUpgradeActionResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -404,7 +404,7 @@ struct HpmfwupgInitiateUpgradeActionCtx {
 	struct HpmfwupgInitiateUpgradeActionResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* UPLOAD FIRMWARE BLOCK DEFINITIONS */
@@ -422,7 +422,7 @@ struct HpmfwupgUploadFirmwareBlockReq {
 	unsigned char data[];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 
@@ -433,7 +433,7 @@ struct HpmfwupgUploadFirmwareBlockResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -444,7 +444,7 @@ struct HpmfwupgUploadFirmwareBlockCtx {
 	struct HpmfwupgUploadFirmwareBlockResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* FINISH FIRMWARE UPLOAD DEFINITIONS */
@@ -459,7 +459,7 @@ struct HpmfwupgFinishFirmwareUploadReq {
 	unsigned char imageLength[HPMFWUPG_IMAGE_SIZE_BYTE_COUNT];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -469,7 +469,7 @@ struct HpmfwupgFinishFirmwareUploadResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -480,7 +480,7 @@ struct HpmfwupgFinishFirmwareUploadCtx {
 	struct HpmfwupgFinishFirmwareUploadResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* ACTIVATE FW DEFINITIONS */
@@ -492,7 +492,7 @@ struct HpmfwupgActivateFirmwareReq {
 	unsigned char rollback_override;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -502,7 +502,7 @@ struct HpmfwupgActivateFirmwareResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -513,7 +513,7 @@ struct HpmfwupgActivateFirmwareCtx {
 	struct HpmfwupgActivateFirmwareResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* GET UPGRADE STATUS DEFINITIONS */
@@ -524,7 +524,7 @@ struct HpmfwupgGetUpgradeStatusReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -536,7 +536,7 @@ struct HpmfwupgGetUpgradeStatusResp {
 	unsigned char lastCmdCompCode;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -547,7 +547,7 @@ struct HpmfwupgGetUpgradeStatusCtx {
 	struct HpmfwupgGetUpgradeStatusResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* MANUAL FW ROLLBACK DEFINITIONS */
@@ -558,7 +558,7 @@ struct HpmfwupgManualFirmwareRollbackReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -568,18 +568,18 @@ struct HpmfwupgManualFirmwareRollbackResp {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 struct HpmfwupgManualFirmwareRollbackCtx {
 	struct HpmfwupgManualFirmwareRollbackReq  req;
 	struct HpmfwupgManualFirmwareRollbackResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* QUERY ROLLBACK STATUS DEFINITIONS */
@@ -590,7 +590,7 @@ struct HpmfwupgQueryRollbackStatusReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -601,7 +601,7 @@ struct HpmfwupgQueryRollbackStatusResp {
 	struct HpmfwupgComponentBitMask rollbackComp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -612,7 +612,7 @@ struct HpmfwupgQueryRollbackStatusCtx {
 	struct HpmfwupgQueryRollbackStatusResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* QUERY SELF TEST RESULT DEFINITIONS */
@@ -623,7 +623,7 @@ struct  HpmfwupgQuerySelftestResultReq {
 	unsigned char picmgId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -635,7 +635,7 @@ struct  HpmfwupgQuerySelftestResultResp {
 	unsigned char result2;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -646,7 +646,7 @@ struct HpmfwupgQuerySelftestResultCtx {
 	struct HpmfwupgQuerySelftestResultResp resp;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 /* HPM.1 IMAGE DEFINITIONS */
@@ -697,7 +697,7 @@ struct HpmfwupgImageHeader {
 	unsigned short oemDataLength;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #define HPMFWUPG_DESCRIPTION_LENGTH   21
@@ -711,7 +711,7 @@ struct HpmfwupgActionRecord {
 	unsigned char  checksum;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #define HPMFWUPG_FIRMWARE_SIZE_LENGTH 4
@@ -725,7 +725,7 @@ struct HpmfwupgFirmwareImage {
 	unsigned char length[HPMFWUPG_FIRMWARE_SIZE_LENGTH];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -741,7 +741,7 @@ struct HpmfwupgUpgradeCtx {
 	struct ipm_devid_rsp devId;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-# pragma pack(0)
+# pragma pack()
 #endif
 
 typedef enum eHpmfwupgActionType {

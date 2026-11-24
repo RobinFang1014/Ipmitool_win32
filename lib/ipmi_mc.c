@@ -128,7 +128,7 @@ struct bmc_enables_data {
 #endif
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 struct bitfield_data {

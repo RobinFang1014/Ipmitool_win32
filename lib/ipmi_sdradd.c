@@ -70,7 +70,7 @@ struct sdr_add_rq {
   uint8_t data[1];      /* SDR record data */
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 /* This was formerly initialized to 24, reduced this to 19 so the overall
