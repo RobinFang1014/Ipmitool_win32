@@ -33,7 +33,14 @@ POSSIBILITY OF SUCH DAMAGE.
 # include <config.h>
 #endif
 
-#pragma pack(1)
+/*
+ * Everything in this header is packed. push/pop keeps the packing inside
+ * this header: a plain "#pragma pack(1)" stayed active for the headers
+ * included after it (on GCC for the rest of the file, on MSVC until the
+ * next "#pragma pack()"), so e.g. struct fru_info had another layout in
+ * ipmi_delloem.c than in ipmi_fru.c.
+ */
+#pragma pack(push, 1)
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
@@ -190,13 +197,19 @@ typedef struct _lcd_mode
 #define IMC_IDRAC_13G_DCS			(uint8_t) (0x22)
 
 
+/*
+ * One 8-byte record of the embedded NIC MAC list: 2 bytes of flags, then
+ * the MAC address. The bit-fields use uint8_t: with "unsigned int" MSVC
+ * stores them in a 4-byte unit even under #pragma pack(1), which moved
+ * MacAddressByte from offset 2 to 4 (GCC packs them into 2 bytes).
+ */
 typedef struct
 {
-     unsigned int BladSlotNumber : 4;
-     unsigned int MacType : 2;
-     unsigned int EthernetStatus : 2;
-     unsigned int NICNumber : 5;
-     unsigned int Reserved : 3;
+     uint8_t BladSlotNumber : 4;
+     uint8_t MacType : 2;
+     uint8_t EthernetStatus : 2;
+     uint8_t NICNumber : 5;
+     uint8_t Reserved : 3;
      uint8_t MacAddressByte[MACADDRESSLENGH];
 } LOMMacAddressType;
 
@@ -362,3 +375,13 @@ typedef struct _SensorReadingType
 }SensorReadingType;
 uint16_t compareinputwattage(IPMI_POWER_SUPPLY_INFO* powersupplyinfo, uint16_t inputwattage);
 int ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv);
+
+#pragma pack(pop)
+
+/* ipmi_delloem.c copies 8-byte records from the response into these. */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(sizeof(LOMMacAddressType) == 2 + MACADDRESSLENGH,
+               "LOMMacAddressType must match the 8-byte wire record");
+_Static_assert(sizeof(EmbeddedNICMacAddressType) == MAX_LOM * (2 + MACADDRESSLENGH),
+               "EmbeddedNICMacAddressType must be MAX_LOM wire records");
+#endif

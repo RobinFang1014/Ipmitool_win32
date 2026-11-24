@@ -61,7 +61,7 @@ struct rmcp_hdr {
 	uint8_t class;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -77,7 +77,7 @@ struct rmcp_pong {
 	uint8_t reserved[6];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 int handle_rmcp(struct ipmi_intf * intf, uint8_t * data, int data_len);

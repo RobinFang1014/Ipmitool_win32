@@ -52,7 +52,7 @@ struct asf_hdr {
 	uint8_t		len;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 int handle_asf(struct ipmi_intf * intf, uint8_t * data, int data_len);

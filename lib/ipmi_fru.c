@@ -1752,7 +1752,7 @@ typedef struct OemKontronInformationRecordV0{
 	uint8_t crc32[OEM_KONTRON_FIELD_SIZE];
 }tOemKontronInformationRecordV0;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 
@@ -1770,7 +1770,7 @@ typedef struct OemKontronInformationRecordV1{
 	uint8_t crc32[OEM_KONTRON_FIELD_SIZE];
 }tOemKontronInformationRecordV1;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 /*

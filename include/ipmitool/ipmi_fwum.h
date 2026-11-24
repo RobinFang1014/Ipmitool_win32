@@ -145,7 +145,7 @@ struct KfwumGetInfoResp {
 	unsigned char numBank;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -161,7 +161,7 @@ struct KfwumGetStatusResp {
 	unsigned char firmRev3;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -171,7 +171,7 @@ struct KfwumManualRollbackReq {
 	unsigned char type;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -186,7 +186,7 @@ struct KfwumStartFirmwareDownloadReq {
 	unsigned char useSequence;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -196,7 +196,7 @@ struct KfwumStartFirmwareDownloadResp {
 	unsigned char bank;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -211,7 +211,7 @@ struct KfwumSaveFirmwareAddressReq
 	unsigned char txBuf[KFWUM_SMALL_BUFFER-KFWUM_OLD_CMD_OVERHEAD];
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -223,7 +223,7 @@ struct KfwumSaveFirmwareSequenceReq
 	unsigned char txBuf[KFWUM_BIG_BUFFER];
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif
 
 # ifdef HAVE_PRAGMA_PACK
@@ -236,5 +236,5 @@ struct KfwumFinishFirmwareDownloadReq {
 	unsigned char reserved;
 } ATTRIBUTE_PACKING;
 # ifdef HAVE_PRAGMA_PACK
-#  pragma pack(0)
+#  pragma pack()
 # endif

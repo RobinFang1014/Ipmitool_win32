@@ -141,7 +141,7 @@ typedef struct sImeStatus {
    uint8_t free_area_size[4];
 } ATTRIBUTE_PACKING tImeStatus ;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
@@ -152,7 +152,7 @@ typedef struct sImeCaps {
    uint8_t special_caps;
 } ATTRIBUTE_PACKING tImeCaps ;
 #ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
+#pragma pack()
 #endif
 
 
