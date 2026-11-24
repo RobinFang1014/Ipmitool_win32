@@ -2750,18 +2750,28 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 	/* See if user requested set to current client system time */
 	if (strcasecmp(time_string, "now") == 0) {
-		t = time(NULL);
 		/*
-		 * Now we have local time in t, but BMC requires UTC
+		 * time() already returns seconds since the Epoch in UTC,
+		 * which is exactly what the BMC expects. No conversion needed.
 		 */
-		t = ipmi_localtime2utc(t);
+		t = time(NULL);
 	}
 	else {
 		bool error = true; /* Assume the string is invalid */
 		/* Now let's extract time_t from the supplied string */
 		if (strptime(time_string, time_format, &tm) != NULL) {
-			tm.tm_isdst = (-1); /* look up DST information */
-			t = mktime(&tm);
+			if (time_in_utc) {
+				/* `-Z` given: the string is UTC wall-clock time */
+#ifdef _WIN32
+				t = _mkgmtime(&tm);
+#else
+				t = timegm(&tm);
+#endif
+			} else {
+				/* The string is local wall-clock time */
+				tm.tm_isdst = (-1); /* look up DST information */
+				t = mktime(&tm);
+			}
 			if (t >= 0) {
 				/* Surprisingly, the user hasn't mistaken ;) */
 				error = false;
@@ -2771,13 +2781,6 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 		if (error) {
 			lprintf(LOG_ERR, "Specified time could not be parsed");
 			return -1;
-		}
-
-		/*
-		 * If `-c` wasn't specified then t we've just got is in local timesone
-		 */
-		if (!time_in_utc) {
-			t = ipmi_localtime2utc(t);
 		}
 	}
 

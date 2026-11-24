@@ -53,6 +53,138 @@ ipmi_localtime2utc(time_t local)
 	return mktime(&tm);
 }
 
+#ifdef _WIN32
+/*
+ * MSVC's strftime() expands %Z to the full Windows time zone name
+ * (e.g. "Taipei Standard Time", or a localized one such as
+ * "台北標準時間"), and it does so even for a struct tm that came from
+ * gmtime(), so '-Z' output would be mislabeled.
+ *
+ * Replace %Z with a short label like Linux prints:
+ *   - UTC output ('-Z' or BMC-relative stamps) -> "UTC"
+ *   - local time -> initials of the English Windows time zone key name,
+ *     e.g. "Taipei Standard Time" -> "TST",
+ *          "Pacific Standard Time" during DST -> "PDT"
+ *   - fallback if no name is available -> "UTC+8", "UTC+5:30"
+ */
+static bool
+ipmi_win32_tz_abbrev(char *buf, size_t len, bool is_dst)
+{
+	DYNAMIC_TIME_ZONE_INFORMATION dtzi;
+	const WCHAR *name;
+	const WCHAR *word;
+	size_t o = 0;
+	size_t wlen;
+
+	if (len < 2 ||
+	    GetDynamicTimeZoneInformation(&dtzi) == TIME_ZONE_ID_INVALID) {
+		return false;
+	}
+	name = dtzi.TimeZoneKeyName;
+
+	/* Single-word key names ("UTC", "UTC+12") are already short */
+	if (!wcschr(name, L' ')) {
+		for (; *name && o + 1 < len; name++) {
+			if (*name > 0x7F) {
+				return false;
+			}
+			buf[o++] = (char)*name;
+		}
+		buf[o] = '\0';
+		return o > 0;
+	}
+
+	for (word = name; *word && o + 1 < len; ) {
+		while (*word == L' ') {
+			word++;
+		}
+		if (!*word) {
+			break;
+		}
+		wlen = wcscspn(word, L" ");
+		if (is_dst && wlen == 8 && wcsncmp(word, L"Standard", 8) == 0) {
+			buf[o++] = 'D'; /* Standard -> Daylight */
+		} else if (*word < 0x80 && isalpha((int)*word)) {
+			buf[o++] = (char)toupper((int)*word);
+		}
+		word += wlen;
+	}
+	buf[o] = '\0';
+	return o > 0;
+}
+
+static void
+ipmi_win32_tz_label(char *buf, size_t len, const struct tm *tm,
+                    time_t stamp, bool is_utc)
+{
+	struct tm tmp;
+	long offset;
+	char sign = '+';
+
+	if (is_utc) {
+		snprintf(buf, len, "UTC");
+		return;
+	}
+
+	if (ipmi_win32_tz_abbrev(buf, len, tm->tm_isdst > 0)) {
+		return;
+	}
+
+	/* Fallback: numeric offset from UTC */
+	tmp = *tm; /* _mkgmtime() normalizes its argument */
+	offset = (long)(_mkgmtime(&tmp) - stamp);
+
+	if (offset == 0) {
+		snprintf(buf, len, "UTC");
+		return;
+	}
+	if (offset < 0) {
+		sign = '-';
+		offset = -offset;
+	}
+	if (offset % 3600) {
+		snprintf(buf, len, "UTC%c%ld:%02ld", sign,
+		         offset / 3600, (offset % 3600) / 60);
+	} else {
+		snprintf(buf, len, "UTC%c%ld", sign, offset / 3600);
+	}
+}
+
+static size_t
+ipmi_win32_strftime(char *s, size_t max, const char *format,
+                    const struct tm *tm, time_t stamp, bool is_utc)
+{
+	char fmt[IPMI_ASCTIME_SZ * 2];
+	char label[16];
+	size_t o = 0;
+	size_t i;
+
+	ipmi_win32_tz_label(label, sizeof(label), tm, stamp, is_utc);
+
+	while (*format && o + 2 < sizeof(fmt)) {
+		if (format[0] == '%' && format[1] == '%') {
+			fmt[o++] = *format++;
+			fmt[o++] = *format++;
+		} else if (format[0] == '%' && format[1] == 'Z') {
+			for (i = 0; label[i] && o + 1 < sizeof(fmt); i++) {
+				fmt[o++] = label[i];
+			}
+			format += 2;
+		} else {
+			fmt[o++] = *format++;
+		}
+	}
+	fmt[o] = '\0';
+
+	return strftime(s, max, fmt, tm);
+}
+# define ipmi_do_strftime(buf, buflen, fmt, t, stamp, is_utc) \
+	ipmi_win32_strftime(buf, buflen, fmt, t, stamp, is_utc)
+#else
+# define ipmi_do_strftime(buf, buflen, fmt, t, stamp, is_utc) \
+	wrapstrftime(buf, buflen, fmt, t)
+#endif
+
 /**
  * @brief Convert a timestamp to a formatted string,
  *        considering the '-Z' option. Acts as if tzset() was called.
@@ -95,7 +227,7 @@ ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
 		/* Timestamp is relative to BMC start, no GMT offset */
 		gmtime_r(&stamp, &tm);
 
-		return wrapstrftime(s, max, format, &tm);
+		return ipmi_do_strftime(s, max, format, &tm, stamp, true);
 	}
 
 	if (time_in_utc || ipmi_timestamp_is_special(stamp)) {
@@ -108,13 +240,14 @@ ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
 #ifndef _WIN32
 		daylight = -1;
 #endif
-	} else {
-		/*
-		 * The user wants the time reported in local time zone.
-		 */
-		localtime_r(&stamp, &tm);
+		return ipmi_do_strftime(s, max, format, &tm, stamp, true);
 	}
-	return wrapstrftime(s, max, format, &tm);
+
+	/*
+	 * The user wants the time reported in local time zone.
+	 */
+	localtime_r(&stamp, &tm);
+	return ipmi_do_strftime(s, max, format, &tm, stamp, false);
 }
 
 /**

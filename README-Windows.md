@@ -26,9 +26,9 @@ This is not an official ipmitool release.
 
 ## AI-Assisted Work Division / AI 協作分工
 
-This Windows port was assisted by AI tools, including OpenAI Codex and Google Gemini.
+This Windows port was assisted by AI tools, including OpenAI Codex, Google Gemini, and Anthropic Claude.
 
-本 Windows 移植版本有 AI 工具協助，包含 OpenAI Codex 與 Google Gemini。
+本 Windows 移植版本有 AI 工具協助，包含 OpenAI Codex、Google Gemini 與 Anthropic Claude。
 
 ### OpenAI Codex
 
@@ -39,6 +39,11 @@ This Windows port was assisted by AI tools, including OpenAI Codex and Google Ge
 - Assisted in adding the local `enterprise-numbers.txt` file.
 - Assisted in converting the `enterprise-numbers.txt` loading code so the Windows build can read it as an embedded resource.
 - Assisted in implementing or adapting the WMI interface for native Windows IPMI access.
+
+### Anthropic Claude
+
+- Assisted in fixing `sel time set` applying the time zone offset twice, which made the BMC clock 8 or 16 hours off.
+- Assisted in replacing the long Windows time zone name in time output with a short abbreviation (e.g. `TST`, or `UTC` with `-Z`).
 
 ### 中文分工
 
@@ -51,6 +56,11 @@ This Windows port was assisted by AI tools, including OpenAI Codex and Google Ge
 - 協助加入本地端 `enterprise-numbers.txt` 檔案。
 - 協助轉換 `enterprise-numbers.txt` 的讀取程式碼，讓 Windows build 可以從內嵌 resource 讀取資料。
 - 協助實作或調整 WMI interface，供 native Windows IPMI 存取使用。
+
+### Anthropic Claude
+
+- 協助修正 `sel time set` 重複套用時區偏移，導致 BMC 時間差 8 或 16 小時的問題。
+- 協助將時間顯示中過長的 Windows 時區名稱改為縮寫（例如 `TST`；加 `-Z` 時顯示 `UTC`）。
 
 ## IANA Enterprise Numbers / IANA 企業編號資料
 
