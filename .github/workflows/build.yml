@@ -1,0 +1,82 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release x64
+        shell: pwsh
+        run: |
+          # The project targets the VS 2026 toolset (v145). If the runner
+          # does not have VS 2026 yet, fall back to the VS 2022 toolset.
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsVersion = & $vswhere -latest -property installationVersion
+          Write-Host "Visual Studio version: $vsVersion"
+
+          $msbuildArgs = @(
+            'ipmitool-windows.sln', '/m',
+            '/p:Configuration=Release', '/p:Platform=x64'
+          )
+          if ([int]($vsVersion.Split('.')[0]) -lt 18) {
+            Write-Host "VS 2026 not found, building with PlatformToolset=v143"
+            $msbuildArgs += '/p:PlatformToolset=v143'
+          }
+
+          msbuild @msbuildArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          Copy-Item bin\x64\Release\ipmitool.exe, COPYING, AUTHORS, README.md, README-Windows.md package\
+          Compress-Archive -Path package\* -DestinationPath ipmitool-win-x64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipmitool-win-x64
+          path: package/
+
+      - name: Upload release zip for tag builds
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-zip
+          path: ipmitool-win-x64.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release zip
+        uses: actions/download-artifact@v4
+        with:
+          name: release-zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ipmitool-win-x64.zip
+          generate_release_notes: true
