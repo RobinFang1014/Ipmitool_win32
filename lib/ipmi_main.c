@@ -288,6 +288,67 @@ void ipmi_catch_sigint()
 	exit(-1);
 }
 
+#ifdef _WIN32
+/* Time the main thread gets to close the session after the first Ctrl+C */
+#define IPMI_CTRL_C_GRACE_MS	5000
+
+static volatile LONG ipmi_ctrl_c_count = 0;
+
+/* Exits if the main thread has not finished IPMI_CTRL_C_GRACE_MS after
+ * the first Ctrl+C. If main finishes first, the process ends and this
+ * thread goes with it. */
+static DWORD WINAPI
+ipmi_ctrl_c_watchdog(LPVOID arg)
+{
+	(void)arg;
+	Sleep(IPMI_CTRL_C_GRACE_MS);
+	fprintf(stderr, "Interface did not close in %d s, exiting now\n",
+			IPMI_CTRL_C_GRACE_MS / 1000);
+	ExitProcess((UINT)-1);
+	return 0;
+}
+
+/* ipmi_console_ctrl_handler  -  Ctrl+C / Ctrl+Break on Windows
+ *
+ * Windows runs this on a new thread while the main thread keeps running
+ * (it is not a signal), so calling intf->close() here like
+ * ipmi_catch_sigint() does would use the socket and the session from two
+ * threads at once. Instead:
+ *
+ * - 1st Ctrl+C: set the interrupt flag. The lan/lanplus/wmi code sees it,
+ *   stops waiting and returns, and ipmi_main() closes the interface on
+ *   the main thread (the BMC session is freed right away). A watchdog
+ *   thread exits if that takes longer than IPMI_CTRL_C_GRACE_MS.
+ * - 2nd Ctrl+C: exit at once.
+ *
+ * The handler must return quickly: Windows delivers the next Ctrl+C only
+ * after this one returns, so waiting here would block the 2nd Ctrl+C.
+ */
+static BOOL WINAPI
+ipmi_console_ctrl_handler(DWORD type)
+{
+	HANDLE watchdog;
+
+	if (type != CTRL_C_EVENT && type != CTRL_BREAK_EVENT)
+		return FALSE;	/* window close, logoff, ...: default handling */
+
+	if (InterlockedIncrement(&ipmi_ctrl_c_count) > 1) {
+		fprintf(stderr, "\nInterrupted again, exiting now\n");
+		ExitProcess((UINT)-1);
+	}
+
+	fprintf(stderr, "\nInterrupted: closing interface %s"
+			" (press Ctrl+C again to exit now)\n",
+			ipmi_main_intf ? ipmi_main_intf->desc : "");
+	ipmi_set_interrupted(1);
+
+	watchdog = CreateThread(NULL, 0, ipmi_ctrl_c_watchdog, NULL, 0, NULL);
+	if (watchdog)
+		CloseHandle(watchdog);
+	return TRUE;
+}
+#endif
+
 static uint8_t
 ipmi_acquire_ipmb_address(struct ipmi_intf * intf)
 {
@@ -362,7 +423,11 @@ ipmi_main(int argc, char ** argv,
 	/* save program name */
 	progname = strrchr(argv[0], '/');
 	progname = ((!progname) ? argv[0] : progname+1);
+#ifdef _WIN32
+	SetConsoleCtrlHandler(ipmi_console_ctrl_handler, TRUE);
+#else
 	signal(SIGINT, ipmi_catch_sigint);
+#endif
 	memset(kgkey, 0, sizeof(kgkey));
 
 	/* setup log */
@@ -1034,6 +1099,15 @@ ipmi_main(int argc, char ** argv,
 
 	/* clean repository caches */
 	ipmi_cleanup(ipmi_main_intf);
+
+	if (ipmi_is_interrupted()) {
+		/* Ctrl+C (Windows): the command was cut short. Clear the flag
+		 * so close() can send Close Session, and try it only once, as
+		 * ipmi_catch_sigint() does. */
+		ipmi_set_interrupted(0);
+		ipmi_main_intf->ssn_params.retry = 1;
+		rc = -1;
+	}
 
 	/* call interface close function if available */
 	if (ipmi_main_intf->opened && ipmi_main_intf->close)

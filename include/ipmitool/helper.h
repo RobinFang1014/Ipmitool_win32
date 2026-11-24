@@ -126,6 +126,8 @@ void printbuf(const uint8_t * buf, int len, const char * desc);
 uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);
 FILE * ipmi_open_file_bin(const char * file, int rw);
+int ipmi_is_interrupted(void);         /* Ctrl+C seen (Windows only) */
+void ipmi_set_interrupted(int on);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 

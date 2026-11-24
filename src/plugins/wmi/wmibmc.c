@@ -13,6 +13,7 @@
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/helper.h>
 
 static IWbemLocator  *g_locator       = NULL;
 static IWbemServices *g_services      = NULL;
@@ -81,6 +82,8 @@ static struct ipmi_rs rsp;
     BSTR bstr_meth = SysAllocString(L"RequestResponse");
     VARIANT v;
 
+    /* Ctrl+C: send no more requests, so command loops end quickly */
+    if (ipmi_is_interrupted()) return NULL;
     if (!intf->opened && winbmc_open(intf) < 0) return NULL;
     memset(&rsp, 0, sizeof(struct ipmi_rs));
 
