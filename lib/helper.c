@@ -765,21 +765,30 @@ ipmi_csum(uint8_t * d, int s)
 	return -c;
 }
 
-/* ipmi_open_file  -  safely open a file for reading or writing
+/* ipmi_open_file_mode  -  safely open a file for reading or writing
  *
  * @file:	filename
  * @rw:		read-write flag, 1=write
+ * @binary:	1=binary stream ("rb"/"wb"), 0=text stream ("r"/"w")
+ *
+ * Binary data (raw SDR/SEL/FRU/EEPROM images) must use binary streams:
+ * on Windows a text stream turns 0x0A into 0x0D 0x0A on write, and on read
+ * drops 0x0D before 0x0A and stops at 0x1A. On POSIX both are the same.
  *
  * returns pointer to file handler on success
  * returns NULL on error
  */
-FILE *
-ipmi_open_file(const char * file, int rw)
+static FILE *
+ipmi_open_file_mode(const char * file, int rw, int binary)
 {
+	const char *rmode = binary ? "rb" : "r";
+	const char *wmode = binary ? "wb" : "w";
+	const char *rwmode = binary ? "w+b" : "w+";
 #ifdef _WIN32
 	FILE *fp = NULL;
-	const char *mode = rw ? "w+" : "r";
+	const char *mode = rw ? rwmode : rmode;
 
+	(void)wmode;
 	if (!file) {
 		return NULL;
 	}
@@ -796,7 +805,7 @@ ipmi_open_file(const char * file, int rw)
 	if (lstat(file, &st1) < 0) {
 		if (rw) {
 			/* does not exist, ok to create */
-			fp = fopen(file, "w");
+			fp = fopen(file, wmode);
 			if (!fp) {
 				lperror(LOG_ERR, "Unable to open file %s "
 					"for write", file);
@@ -813,7 +822,7 @@ ipmi_open_file(const char * file, int rw)
 #ifndef ENABLE_FILE_SECURITY
 	if (!rw) {
 		/* on read skip the extra checks */
-		fp = fopen(file, "r");
+		fp = fopen(file, rmode);
 		if (!fp) {
 			lperror(LOG_ERR, "Unable to open file %s", file);
 			return NULL;
@@ -836,7 +845,7 @@ ipmi_open_file(const char * file, int rw)
 		return NULL;
 	}
 
-	fp = fopen(file, rw ? "w+" : "r");
+	fp = fopen(file, rw ? rwmode : rmode);
 	if (!fp) {
 		lperror(LOG_ERR, "Unable to open file %s", file);
 		return NULL;
@@ -875,6 +884,20 @@ ipmi_open_file(const char * file, int rw)
 
 	return fp;
 #endif
+}
+
+/* ipmi_open_file  -  open a text file (see ipmi_open_file_mode) */
+FILE *
+ipmi_open_file(const char * file, int rw)
+{
+	return ipmi_open_file_mode(file, rw, 0);
+}
+
+/* ipmi_open_file_bin  -  open a binary file (see ipmi_open_file_mode) */
+FILE *
+ipmi_open_file_bin(const char * file, int rw)
+{
+	return ipmi_open_file_mode(file, rw, 1);
 }
 
 void

@@ -843,7 +843,7 @@ ipmi_sunoem_sshkey_set(struct ipmi_intf * intf, uint8_t uid, char * ifile)
 		return (-1);
 	}
 
-	fp = ipmi_open_file_read(ifile);
+	fp = ipmi_open_file_bin_read(ifile);
 	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open file '%s' for reading.", ifile);
 		return (-1);
@@ -2163,7 +2163,7 @@ ipmi_sunoem_getfile(struct ipmi_intf * intf, int argc, char *argv[])
 	strncpy((char*) getfile_req.file_id, argv[0], MAX_FILEID_LEN - 1);
 
 	/* Create the destination file */
-	fp = ipmi_open_file_write(argv[1]);
+	fp = ipmi_open_file_bin_write(argv[1]);
 	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open file: %s", argv[1]);
 		return (-1);

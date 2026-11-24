@@ -4071,7 +4071,7 @@ ipmi_sdr_list_cache_fromfile(const char *ifile)
 		return -1;
 	}
 
-	fp = ipmi_open_file_read(ifile);
+	fp = ipmi_open_file_bin_read(ifile);
 	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open SDR cache %s for reading",
 			ifile);
@@ -4510,7 +4510,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 	ipmi_sdr_end(itr);
 
 	/* now write to file */
-	fp = ipmi_open_file_write(ofile);
+	fp = ipmi_open_file_bin_write(ofile);
 	if (!fp)
 		return -1;
 

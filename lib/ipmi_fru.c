@@ -4519,7 +4519,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 		lprintf(LOG_DEBUG, "Internal Use Area Offset: %i", offset);
 		printf(            "Internal Use Area Size  : %i\n", size);
 
-		fp = fopen(pFileName, "r");
+		fp = fopen(pFileName, "rb");
 
 		if(fp)
 		{

@@ -2380,7 +2380,7 @@ ipmi_ek_display_fru_header(char *filename)
 	struct fru_header header;
 	int ret = 0;
 
-	input_file = fopen(filename, "r");
+	input_file = fopen(filename, "rb");
 	if (!input_file) {
 		lprintf(LOG_ERR, "File '%s' not found.", filename);
 		return (ERROR_STATUS);
@@ -2443,7 +2443,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	unsigned char mfg_date[SIZE_MFG_DATE];
 	unsigned int board_length = 0;
 
-	input_file = fopen(filename, "r");
+	input_file = fopen(filename, "rb");
 	if (!input_file) {
 		lprintf(LOG_ERR, "File '%s' not found.", filename);
 		return (-1);
@@ -4111,7 +4111,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 	int record_count = 0;
 	int ret = 0;
 
-	input_file = fopen(filename, "r");
+	input_file = fopen(filename, "rb");
 	if (!input_file) {
 		lprintf(LOG_ERR, "File: '%s' is not found", filename);
 		return ERROR_STATUS;

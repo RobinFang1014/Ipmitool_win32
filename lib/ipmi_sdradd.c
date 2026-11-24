@@ -50,6 +50,10 @@
 
 #include <ipmitool/ipmi_sdr.h>
 
+/* POSIX has no text/binary distinction, so O_BINARY may be missing */
+#ifndef O_BINARY
+# define O_BINARY 0
+#endif
 
 #define ADD_PARTIAL_SDR 0x25
 
@@ -581,7 +585,8 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
   queue->head = NULL;
   queue->tail = NULL;
 
-  if ((fd = open(filename, O_RDONLY)) < 0) {
+  /* O_BINARY: on Windows _open() defaults to text mode (see helper.c) */
+  if ((fd = open(filename, O_RDONLY | O_BINARY)) < 0) {
     return -1;
   }
 
