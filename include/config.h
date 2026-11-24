@@ -1,9 +1,11 @@
 #pragma once
 
+#include "version.h"
+
 #define PACKAGE "ipmitool"
 #define PACKAGE_NAME "ipmitool"
-#define PACKAGE_VERSION "1.8.19-win32"
-#define VERSION "1.8.19-win32"
+#define PACKAGE_VERSION IPMITOOL_WIN32_VERSION_STR
+#define VERSION IPMITOOL_WIN32_VERSION_STR
 
 #define HAVE_CONFIG_H 1
 #define HAVE_PRAGMA_PACK 1
