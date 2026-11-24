@@ -18,6 +18,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check version.h
+        shell: pwsh
+        run: |
+          # include/version.h is the only place the version is defined.
+          $h = Get-Content include/version.h -Raw
+          function Get-Define($name) {
+            if ($h -match "#define\s+$name\s+(\S+)") { return $Matches[1].Trim('"') }
+            throw "$name not found in include/version.h"
+          }
+          $str = Get-Define 'IPMITOOL_WIN32_VERSION_STR'
+          $num = '{0}.{1}.{2}-win32.{3}' -f (Get-Define 'IPMITOOL_WIN32_VER_MAJOR'),
+                 (Get-Define 'IPMITOOL_WIN32_VER_MINOR'), (Get-Define 'IPMITOOL_WIN32_VER_PATCH'),
+                 (Get-Define 'IPMITOOL_WIN32_VER_REVISION')
+          Write-Host "version.h: $str"
+
+          # The numeric fields (exe File version) must match the string.
+          if ($num -ne $str) {
+            Write-Error "version.h mismatch: numbers give '$num' but IPMITOOL_WIN32_VERSION_STR is '$str'"
+            exit 1
+          }
+
+          # For release tags, the tag must be "v" + version string.
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $tag = $env:GITHUB_REF_NAME
+            if ($tag -ne "v$str") {
+              Write-Error "Tag '$tag' does not match version.h 'v$str'. Update include/version.h or fix the tag."
+              exit 1
+            }
+            Write-Host "Tag $tag matches version.h"
+          }
+
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
