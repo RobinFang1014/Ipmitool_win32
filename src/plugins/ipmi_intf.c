@@ -420,6 +420,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	struct addrinfo *rp0 = NULL, *rp;
 	char service[NI_MAXSERV];
 	int connected = 0;
+	int gai_rc;
+	int last_err = 0;	/* error of the last failed socket()/connect() */
 #ifdef _WIN32
 	int wsa_rc;
 #endif
@@ -431,7 +433,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 #ifdef _WIN32
 	wsa_rc = ipmi_winsock_startup();
 	if (wsa_rc != 0) {
-		lprintf(LOG_ERR, "WSAStartup failed: %d", wsa_rc);
+		lprintf(LOG_ERR, "WSAStartup failed: %s", ipmi_socket_strerror(wsa_rc));
 		return -1;
 	}
 #endif
@@ -455,9 +457,10 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	hints.ai_flags    = 0;            /* use AI_NUMERICSERV for no name resolution */
 	hints.ai_protocol = IPPROTO_UDP; /*  */
 
-	if (getaddrinfo(params->hostname, service, &hints, &rp0) != 0) {
-		lprintf(LOG_ERR, "Address lookup for %s failed",
-				params->hostname);
+	gai_rc = getaddrinfo(params->hostname, service, &hints, &rp0);
+	if (gai_rc != 0) {
+		lprintf(LOG_ERR, "Address lookup for %s failed: %s",
+				params->hostname, ipmi_gai_strerror(gai_rc));
 		return -1;
 	}
 
@@ -475,6 +478,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 
 		intf->fd = (ipmi_fd_t)socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (intf->fd == IPMI_INVALID_FD) {
+			last_err = ipmi_socket_errno();
 			continue;
 		}
 		ipmi_socket_disable_udp_connreset(intf->fd);
@@ -578,6 +582,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 		if (connected) {
 			break;
 		}
+		/* connect() failed: keep its error before closesocket() */
+		last_err = ipmi_socket_errno();
 		ipmi_socket_close(intf->fd);
 		intf->fd = IPMI_INVALID_FD;
 	}
@@ -588,6 +594,15 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	if (!connected && intf->fd != IPMI_INVALID_FD) {
 		ipmi_socket_close(intf->fd);
 		intf->fd = IPMI_INVALID_FD;
+	}
+
+	if (!connected) {
+		if (last_err)
+			lprintf(LOG_ERR, "Connect to %s failed: %s",
+					params->hostname, ipmi_socket_strerror(last_err));
+		else
+			lprintf(LOG_ERR, "Connect to %s failed: no IPv4/IPv6 address",
+					params->hostname);
 	}
 
 	return connected ? 0 : -1;
