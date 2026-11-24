@@ -4,6 +4,11 @@
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+/* The UCRT declares the POSIX names (open, read, close, strdup, ...) but
+ * marks them deprecated (C4996); they are fine to use. */
+#ifndef _CRT_NONSTDC_NO_WARNINGS
+#define _CRT_NONSTDC_NO_WARNINGS
+#endif
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
@@ -69,23 +74,18 @@ typedef int pid_t;
 #define STDERR_FILENO 2
 #endif
 
-#define strdup _strdup
+/*
+ * Only map names the UCRT does not have. open, read, write, close, dup,
+ * access, umask, chdir, getpid, fileno, strdup, stat and fstat (and
+ * struct stat) exist under their POSIX names, so they are not #defined:
+ * an object-like "#define close _close" also renamed every struct member
+ * and variable called close/open/read/access (intf->close became
+ * intf->_close).
+ */
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
-#define fileno _fileno
-#define fstat _fstat
-#define lstat _stat
-#define stat _stat
-#define open _open
-#define read _read
-#define write _write
-#define close _close
-#define dup _dup
-#define chdir _chdir
-#define umask _umask
-#define getpid _getpid
-#define access _access
 #define strtok_r strtok_s
+#define lstat stat		/* no symbolic links to tell apart here */
 
 #ifndef S_ISREG
 #define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
