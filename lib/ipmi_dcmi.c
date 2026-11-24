@@ -845,8 +845,9 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 	}
 
 	if (intf->fd < 0) {
-		lperror(LOG_ERR, "Connect to %s failed",
-		        p->hostname);
+		/* not lperror(): Winsock does not set errno */
+		lprintf(LOG_ERR, "Connect to %s failed: %s",
+		        p->hostname, ipmi_socket_strerror(ipmi_socket_errno()));
 		intf->close(intf);
 		return -1;
 	}

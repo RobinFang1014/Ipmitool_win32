@@ -353,6 +353,45 @@ static __inline int ipmi_fd_isset_socket(ipmi_fd_t fd, fd_set *set)
 #define IPMI_FD_SET_SOCKET(fd, set) ipmi_fd_set_socket((fd), (set))
 #define IPMI_FD_ISSET_SOCKET(fd, set) ipmi_fd_isset_socket((fd), (set))
 
+/* Error code of the last failed socket call. Winsock does not set errno,
+ * so call this right after the call that failed. */
+static __inline int ipmi_socket_errno(void)
+{
+    return WSAGetLastError();
+}
+
+/* Text for a Winsock error code (also what getaddrinfo() returns on
+ * Windows), e.g. "No such host is known (WSA 11001)". English when the
+ * system has it, otherwise the system language. Static buffer. */
+static __inline const char *ipmi_socket_strerror(int err)
+{
+    static char text[300];
+    char msg[256];
+    DWORD n;
+
+    n = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                       NULL, (DWORD)err, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+                       msg, sizeof(msg), NULL);
+    if (n == 0) {
+        n = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL, (DWORD)err, 0, msg, sizeof(msg), NULL);
+    }
+    /* drop the trailing ".\r\n" */
+    while (n > 0 && (msg[n - 1] == '\r' || msg[n - 1] == '\n' ||
+                     msg[n - 1] == ' ' || msg[n - 1] == '.')) {
+        msg[--n] = '\0';
+    }
+    if (n == 0) {
+        _snprintf_s(text, sizeof(text), _TRUNCATE, "WSA error %d", err);
+    } else {
+        _snprintf_s(text, sizeof(text), _TRUNCATE, "%s (WSA %d)", msg, err);
+    }
+    return text;
+}
+
+/* getaddrinfo() on Windows returns Winsock error codes */
+#define ipmi_gai_strerror(rc) ipmi_socket_strerror(rc)
+
 #else
 typedef int ipmi_fd_t;
 #define IPMI_INVALID_FD (-1)
@@ -362,4 +401,7 @@ typedef int ipmi_fd_t;
 #define ipmi_socket_disable_udp_connreset(fd) (0)
 #define IPMI_FD_SET_SOCKET(fd, set) FD_SET((fd), (set))
 #define IPMI_FD_ISSET_SOCKET(fd, set) FD_ISSET((fd), (set))
+#define ipmi_socket_errno() (errno)
+#define ipmi_socket_strerror(err) strerror(err)
+#define ipmi_gai_strerror(rc) gai_strerror(rc)
 #endif
