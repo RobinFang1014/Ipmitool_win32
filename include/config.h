@@ -24,7 +24,12 @@
 #define HAVE_MALLOC_H 1
 #define HAVE_CRYPTO_SHA256 1
 
-#define WORDS_BIGENDIAN 0
+/*
+ * WORDS_BIGENDIAN must stay UNDEFINED on little-endian hosts (x86/x64/ARM64),
+ * matching autoconf's AC_C_BIGENDIAN. Sources test it with #if, #ifdef and
+ * #ifndef; defining it as 0 makes #ifdef/#ifndef pick the big-endian
+ * bitfield layouts (e.g. ipmi_fru.h, ipmi_picmg.h, ipmi_hpmfwupg.h).
+ */
 
 #define IPMI_INTF_WMI 1
 #define IPMI_INTF_LAN 1
