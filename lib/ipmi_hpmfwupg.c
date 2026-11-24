@@ -207,7 +207,7 @@ HpmDisplayUpgrade(int skip, unsigned int totalSent,
 		/* Display the time taken to complete the upgrade */
 		printf(
 "\n|    |Upload Time: %02ld:%02ld             | Image Size: %7d bytes              |\n",
-			timeElapsed / 60, timeElapsed % 60, totalSent);
+			(long)(timeElapsed / 60), (long)(timeElapsed % 60), totalSent);
 		old_percent = -1;
 	}
 }
@@ -1297,7 +1297,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 					}
 					if (displayFWLength == totalSent) {
 						printf("\n Time Taken %02ld:%02ld",
-								(end-start)/60, (end-start)%60);
+								(long)((end-start)/60), (long)((end-start)%60));
 						printf("\n\n");
 					}
 				} else {

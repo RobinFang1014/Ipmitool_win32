@@ -427,7 +427,7 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
             shownPercent = currentPercent;
             printf("Percent: %02i,  ", shownPercent);
             time(&current);
-            printf("Elapsed time %02ld:%02ld\r",((current-start)/60), ((current-start)%60));
+            printf("Elapsed time %02ld:%02ld\r",(long)((current-start)/60), (long)((current-start)%60));
             fflush(stdout);
 
          }
@@ -476,13 +476,13 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
      )
    {
       time(&end);
-      printf("Update Completed in %02ld:%02ld\n",(end-start)/60, (end-start)%60);
+      printf("Update Completed in %02ld:%02ld\n",(long)((end-start)/60), (long)((end-start)%60));
    }
    else
    {
       time(&end);
       printf("Update Error\n");
-      printf("\nTime Taken %02ld:%02ld\n",(end-start)/60, (end-start)%60);
+      printf("\nTime Taken %02ld:%02ld\n",(long)((end-start)/60), (long)((end-start)%60));
    }
 
    return rc;

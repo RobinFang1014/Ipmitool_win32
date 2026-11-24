@@ -1577,7 +1577,6 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t msg_data[30];
 	uint8_t VirtualMacAddress [MACADDRESSLENGH];
 	uint8_t input_length=0;
-	uint8_t j;
 	uint8_t i;
 	if (NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER) {
 		return 0;
@@ -1667,7 +1666,6 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
 	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
-	uint8_t j;
 	ipmi_macinfo_drac_idrac_virtual_mac(intf,NicNum);
 	if ((NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER)
 			|| UseVirtualMacAddress != 0) {
@@ -1735,7 +1733,6 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 	struct ipmi_rq req;
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
-	uint8_t j;
 	uint8_t i;
 	uint8_t Total_No_NICs = 0;
 	InitEmbeddedNICMacAddressValues();
@@ -1798,7 +1795,6 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 	struct ipmi_rq req;
 	uint8_t input_length = 0;
 	uint8_t i;
-	uint8_t j;
 	uint8_t len;
 	uint8_t loop_count;
 	uint8_t maxlen;
@@ -3309,7 +3305,7 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		rdata = (void *)pstMinpower;
 		printf("Peak power consmhistory  Data               : "
 				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
+				"%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
 				rdata[0], rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10], rdata[11],
@@ -3488,7 +3484,7 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 	}
 	if (verbose > 1) {
 		rdata = (void*)ipmipowercap;
-		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x ",
 				rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10],rdata[11]);
