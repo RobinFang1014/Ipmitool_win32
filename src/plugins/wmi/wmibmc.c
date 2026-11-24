@@ -1,7 +1,13 @@
 #if defined(_WIN32) || defined(__CYGWIN__)
 /*
- * winbmc.c - Windows WMI IPMI Interface for ipmitool
- * Integrated version with automatic CC offset detection and correct parameter ordering.
+ * wmibmc.c - Windows WMI IPMI interface for ipmitool
+ *
+ * Sends IPMI requests to the local BMC through the Microsoft IPMI driver's
+ * WMI class (ROOT\WMI, Microsoft_IPMI, method RequestResponse).
+ *
+ * Error handling: any failed WMI/COM call makes sendrecv() return NULL, so
+ * the command prints its usual "Error sending ... command". A failed call
+ * must never look like a successful response with empty data.
  */
 
 #include <windows.h>
@@ -14,6 +20,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 
 static IWbemLocator  *g_locator       = NULL;
 static IWbemServices *g_services      = NULL;
@@ -28,152 +35,256 @@ static void winbmc_close(struct ipmi_intf *intf) {
     intf->opened = 0;
 }
 
+/* Explain why the Microsoft_IPMI class could not be used. */
+static void winbmc_report_open_error(HRESULT hr, int found_instance_list)
+{
+    if (hr == WBEM_E_INVALID_CLASS || hr == WBEM_E_NOT_FOUND) {
+        lprintf(LOG_ERR, "WMI: class Microsoft_IPMI not found (0x%08lx). "
+                "The Microsoft IPMI driver is not loaded or no BMC was "
+                "detected on this machine. Use -I lanplus -H <BMC address> "
+                "to reach a BMC over the network.", (unsigned long)hr);
+    } else if (hr == WBEM_E_ACCESS_DENIED || hr == E_ACCESSDENIED) {
+        lprintf(LOG_ERR, "WMI: access to Microsoft_IPMI denied (0x%08lx). "
+                "Run ipmitool as Administrator.", (unsigned long)hr);
+    } else if (found_instance_list) {
+        lprintf(LOG_ERR, "WMI: no Microsoft_IPMI instance: no BMC was "
+                "detected by the Microsoft IPMI driver.");
+    } else {
+        lprintf(LOG_ERR, "WMI: cannot use Microsoft_IPMI (0x%08lx).",
+                (unsigned long)hr);
+    }
+}
+
 static int winbmc_open(struct ipmi_intf *intf) {
     HRESULT hr;
+    BSTR ns = NULL;
+    BSTR bstr_class = NULL;
+    IEnumWbemClassObject *pEnum = NULL;
+
     if (intf->opened) return 0;
 
     hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (SUCCEEDED(hr)) g_com_init = 1;
 
     hr = CoCreateInstance(&CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, &IID_IWbemLocator, (void**)&g_locator);
-    if (FAILED(hr)) return -1;
+    if (FAILED(hr) || !g_locator) {
+        lprintf(LOG_ERR, "WMI: cannot create WbemLocator (0x%08lx)", (unsigned long)hr);
+        goto fail;
+    }
 
-    BSTR ns = SysAllocString(L"ROOT\\WMI");
+    ns = SysAllocString(L"ROOT\\WMI");
+    if (!ns) goto fail;
     hr = g_locator->lpVtbl->ConnectServer(g_locator, ns, NULL, NULL, NULL, 0, NULL, NULL, &g_services);
     SysFreeString(ns);
-    if (FAILED(hr)) return -1;
+    if (FAILED(hr) || !g_services) {
+        lprintf(LOG_ERR, "WMI: cannot connect to ROOT\\WMI (0x%08lx)", (unsigned long)hr);
+        goto fail;
+    }
 
     CoSetProxyBlanket((IUnknown*)g_services, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
                       RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
 
-    // 尋找實例路徑 (Instance Path)
-    IEnumWbemClassObject* pEnum = NULL;
-    BSTR bstr_class = SysAllocString(L"Microsoft_IPMI");
+    /* Find the instance path of the (single) Microsoft_IPMI object */
+    bstr_class = SysAllocString(L"Microsoft_IPMI");
+    if (!bstr_class) goto fail;
     hr = g_services->lpVtbl->CreateInstanceEnum(g_services, bstr_class, 0, NULL, &pEnum);
     SysFreeString(bstr_class);
 
-    if (SUCCEEDED(hr)) {
+    if (SUCCEEDED(hr) && pEnum) {
         IWbemClassObject *pInst = NULL;
         ULONG uRet = 0;
-        if (pEnum->lpVtbl->Next(pEnum, WBEM_INFINITE, 1, &pInst, &uRet) == S_OK && uRet > 0) {
+        if (pEnum->lpVtbl->Next(pEnum, WBEM_INFINITE, 1, &pInst, &uRet) == S_OK && uRet > 0 && pInst) {
             VARIANT v; VariantInit(&v);
-            if (SUCCEEDED(pInst->lpVtbl->Get(pInst, L"__PATH", 0, &v, NULL, NULL))) {
+            if (SUCCEEDED(pInst->lpVtbl->Get(pInst, L"__PATH", 0, &v, NULL, NULL)) &&
+                V_VT(&v) == VT_BSTR) {
                 g_instance_path = SysAllocString(V_BSTR(&v));
-                VariantClear(&v);
             }
+            VariantClear(&v);
             pInst->lpVtbl->Release(pInst);
         }
         pEnum->lpVtbl->Release(pEnum);
     }
 
     if (!g_instance_path) {
-        winbmc_close(intf);
-        return -1;
+        winbmc_report_open_error(hr, SUCCEEDED(hr));
+        goto fail;
     }
 
     intf->opened = 1;
     return 0;
+
+fail:
+    winbmc_close(intf);
+    return -1;
+}
+
+/* Put a VT_UI1 property on the method's input object */
+static int winbmc_put_u1(IWbemClassObject *obj, LPCWSTR name, BYTE val)
+{
+    VARIANT v;
+    HRESULT hr;
+
+    VariantInit(&v);
+    v.vt = VT_UI1;
+    v.bVal = val;
+    hr = obj->lpVtbl->Put(obj, name, 0, &v, 0);
+    if (FAILED(hr))
+        lprintf(LOG_DEBUG, "WMI: Put(%ls) failed (0x%08lx)", name, (unsigned long)hr);
+    return SUCCEEDED(hr);
 }
 
 static struct ipmi_rs *winbmc_sendrecv(struct ipmi_intf *intf, struct ipmi_rq *req) {
-static struct ipmi_rs rsp;
+    static struct ipmi_rs rsp;
+    static int bridge_reported = 0;
+    struct ipmi_rs *result = NULL;
     HRESULT hr;
     IWbemClassObject *pClass = NULL, *pInDef = NULL, *pInInst = NULL, *pOutInst = NULL;
-    BSTR bstr_meth = SysAllocString(L"RequestResponse");
-    VARIANT v;
+    BSTR bstr_class = NULL;
+    BSTR bstr_meth = NULL;
+    VARIANT v, vr;
+    uint8_t our_addr;
 
     /* Ctrl+C: send no more requests, so command loops end quickly */
     if (ipmi_is_interrupted()) return NULL;
     if (!intf->opened && winbmc_open(intf) < 0) return NULL;
+
+    /*
+     * The Microsoft IPMI driver only talks to the local BMC. Requests for
+     * another controller (bridging: sensors owned by e.g. Intel ME at 0x2C,
+     * or -t/-b/-T/-B) used to be sent to the BMC instead, which returned
+     * the BMC's answer for the wrong device. Same rule as lan/lanplus:
+     * bridging is needed when target_addr differs from our own address.
+     */
+    our_addr = intf->my_addr ? intf->my_addr : IPMI_BMC_SLAVE_ADDR;
+    if (intf->target_addr != 0 && intf->target_addr != our_addr) {
+        lprintf(bridge_reported ? LOG_DEBUG : LOG_ERR,
+                "WMI interface cannot bridge to IPMB address 0x%02x "
+                "(channel %d); use -I lanplus for this.",
+                intf->target_addr, intf->target_channel);
+        bridge_reported = 1;
+        return NULL;
+    }
+
     memset(&rsp, 0, sizeof(struct ipmi_rs));
+    VariantInit(&v);
+    VariantInit(&vr);
 
-    // 取得類別與實例
-    g_services->lpVtbl->GetObject(g_services, SysAllocString(L"Microsoft_IPMI"), 0, NULL, &pClass, NULL);
-    pClass->lpVtbl->GetMethod(pClass, bstr_meth, 0, &pInDef, NULL);
-    pInDef->lpVtbl->SpawnInstance(pInDef, 0, &pInInst);
-    // 1. Command & NetFn (強行轉為 VT_UI1)
-    VariantInit(&v); v.vt = VT_UI1; v.bVal = (BYTE)req->msg.cmd;
-    pInInst->lpVtbl->Put(pInInst, L"Command", 0, &v, 0);
+    bstr_class = SysAllocString(L"Microsoft_IPMI");
+    bstr_meth = SysAllocString(L"RequestResponse");
+    if (!bstr_class || !bstr_meth) goto out;
 
-    v.bVal = 0;
-    pInInst->lpVtbl->Put(pInInst, L"Lun", 0, &v, 0);
+    /* Get the method's input parameter object */
+    hr = g_services->lpVtbl->GetObject(g_services, bstr_class, 0, NULL, &pClass, NULL);
+    if (FAILED(hr) || !pClass) {
+        lprintf(LOG_DEBUG, "WMI: GetObject(Microsoft_IPMI) failed (0x%08lx)", (unsigned long)hr);
+        goto out;
+    }
+    hr = pClass->lpVtbl->GetMethod(pClass, bstr_meth, 0, &pInDef, NULL);
+    if (FAILED(hr) || !pInDef) {
+        lprintf(LOG_DEBUG, "WMI: GetMethod(RequestResponse) failed (0x%08lx)", (unsigned long)hr);
+        goto out;
+    }
+    hr = pInDef->lpVtbl->SpawnInstance(pInDef, 0, &pInInst);
+    if (FAILED(hr) || !pInInst) {
+        lprintf(LOG_DEBUG, "WMI: SpawnInstance failed (0x%08lx)", (unsigned long)hr);
+        goto out;
+    }
 
-    v.bVal = (BYTE)req->msg.netfn;
-    pInInst->lpVtbl->Put(pInInst, L"NetworkFunction", 0, &v, 0);
+    /* Command, Lun and NetworkFunction as VT_UI1 */
+    if (!winbmc_put_u1(pInInst, L"Command", (BYTE)req->msg.cmd) ||
+        !winbmc_put_u1(pInInst, L"Lun", (BYTE)(req->msg.lun & 0x3)) ||
+        !winbmc_put_u1(pInInst, L"NetworkFunction", (BYTE)req->msg.netfn))
+        goto out;
 
-    // 2. RequestData - 這裡最關鍵
+    /* RequestData: byte array, or VT_NULL when there is no data */
     if (req->msg.data_len > 0) {
         SAFEARRAYBOUND bound = { (ULONG)req->msg.data_len, 0 };
         SAFEARRAY *sa = SafeArrayCreate(VT_UI1, 1, &bound);
-        void* pDest;
-        SafeArrayAccessData(sa, &pDest);
+        void *pDest = NULL;
+
+        if (!sa) goto out;
+        if (FAILED(SafeArrayAccessData(sa, &pDest))) {
+            SafeArrayDestroy(sa);
+            goto out;
+        }
         memcpy(pDest, req->msg.data, req->msg.data_len);
         SafeArrayUnaccessData(sa);
-        VariantInit(&v); v.vt = VT_ARRAY | VT_UI1; v.parray = sa;
-        pInInst->lpVtbl->Put(pInInst, L"RequestData", 0, &v, 0);
+        v.vt = VT_ARRAY | VT_UI1;
+        v.parray = sa;          /* freed by VariantClear() below */
     } else {
-        // 如果長度為 0，改用 VT_NULL 而不是空 SAFEARRAY
-        VariantInit(&v); v.vt = VT_NULL;
-        pInInst->lpVtbl->Put(pInInst, L"RequestData", 0, &v, 0);
+        v.vt = VT_NULL;
     }
-
-    // 3. RequestDataSize (強行轉為 VT_I4，有時驅動不吃 UI4)
-    VariantInit(&v); v.vt = VT_I4; v.lVal = (long)req->msg.data_len;
-    pInInst->lpVtbl->Put(pInInst, L"RequestDataSize", 0, &v, 0);
-
-    // 4. ResponderAddress (強行 0x20)
-    VariantInit(&v); v.vt = VT_UI1; v.bVal = 0x20;
-    pInInst->lpVtbl->Put(pInInst, L"ResponderAddress", 0, &v, 0);
-
-    // --- 執行方法 ---
-    hr = g_services->lpVtbl->ExecMethod(g_services, g_instance_path, bstr_meth, 0, NULL, pInInst, &pOutInst, NULL);
-
+    hr = pInInst->lpVtbl->Put(pInInst, L"RequestData", 0, &v, 0);
+    VariantClear(&v);           /* Put() made its own copy */
     if (FAILED(hr)) {
-        printf("[DEBUG] Exec Failed: 0x%08lx (N:0x%x C:0x%x Size:%d)\n", 
-               (unsigned long)hr, req->msg.netfn, req->msg.cmd, (int)req->msg.data_len);
-    } else if (pOutInst) {
-        VARIANT vr; VariantInit(&vr);
-        ULONG prop_size = 0;
-
-        // 取得 ResponseDataSize 作為參考
-        if (SUCCEEDED(pOutInst->lpVtbl->Get(pOutInst, L"ResponseDataSize", 0, &vr, NULL, NULL))) {
-            prop_size = (vr.vt == VT_I4 || vr.vt == VT_UI4) ? vr.ulVal : vr.lVal;
-        }
-        VariantClear(&vr);
-
-        // 取得 CompletionCode
-        if (SUCCEEDED(pOutInst->lpVtbl->Get(pOutInst, L"CompletionCode", 0, &vr, NULL, NULL))) {
-            rsp.ccode = (uint8_t)((vr.vt == VT_UI1) ? vr.bVal : vr.lVal);
-        }
-        VariantClear(&vr);
-
-        // 取得 ResponseData (加入 Command 判斷邏輯)
-        if (SUCCEEDED(pOutInst->lpVtbl->Get(pOutInst, L"ResponseData", 0, &vr, NULL, NULL)) && (vr.vt & VT_ARRAY)) {
-            LONG l, u;
-            SafeArrayGetLBound(vr.parray, 1, &l);
-            SafeArrayGetUBound(vr.parray, 1, &u);
-            int n = (int)(u - l + 1);
-            if (n > 0) {
-                 uint8_t* pRaw;
-                 SafeArrayAccessData(vr.parray, (void**)&pRaw);
-                 
-                 int offset = 1; // 只跳過第一個 00 (Completion Code)
- 
-                 rsp.data_len = n - offset;
-                 if (rsp.data_len > (int)sizeof(rsp.data)) rsp.data_len = sizeof(rsp.data);
-                 if (rsp.data_len > 0) memcpy(rsp.data, pRaw + offset, rsp.data_len);
-                 
-                 SafeArrayAccessData(vr.parray, (void**)&pRaw);
-                 SafeArrayUnaccessData(vr.parray);
-             }
-        }
-        VariantClear(&vr);
+        lprintf(LOG_DEBUG, "WMI: Put(RequestData) failed (0x%08lx)", (unsigned long)hr);
+        goto out;
     }
+
+    /* RequestDataSize as VT_I4 (some drivers do not accept UI4) */
+    v.vt = VT_I4;
+    v.lVal = (long)req->msg.data_len;
+    hr = pInInst->lpVtbl->Put(pInInst, L"RequestDataSize", 0, &v, 0);
+    VariantClear(&v);
+    if (FAILED(hr)) {
+        lprintf(LOG_DEBUG, "WMI: Put(RequestDataSize) failed (0x%08lx)", (unsigned long)hr);
+        goto out;
+    }
+
+    /* ResponderAddress: the local BMC */
+    if (!winbmc_put_u1(pInInst, L"ResponderAddress", IPMI_BMC_SLAVE_ADDR))
+        goto out;
+
+    /* --- run the method --- */
+    hr = g_services->lpVtbl->ExecMethod(g_services, g_instance_path, bstr_meth, 0, NULL, pInInst, &pOutInst, NULL);
+    if (FAILED(hr) || !pOutInst) {
+        lprintf(LOG_DEBUG, "WMI: RequestResponse failed (0x%08lx), netfn 0x%02x cmd 0x%02x, %d data bytes",
+                (unsigned long)hr, req->msg.netfn, req->msg.cmd, (int)req->msg.data_len);
+        goto out;
+    }
+
+    /* CompletionCode is required: without it there is no valid response */
+    hr = pOutInst->lpVtbl->Get(pOutInst, L"CompletionCode", 0, &vr, NULL, NULL);
+    if (FAILED(hr) || FAILED(VariantChangeType(&vr, &vr, 0, VT_UI4))) {
+        lprintf(LOG_DEBUG, "WMI: RequestResponse returned no CompletionCode (0x%08lx)", (unsigned long)hr);
+        VariantClear(&vr);
+        goto out;
+    }
+    rsp.ccode = (uint8_t)vr.ulVal;
+    VariantClear(&vr);
+
+    /* ResponseData: the first byte repeats the completion code */
+    hr = pOutInst->lpVtbl->Get(pOutInst, L"ResponseData", 0, &vr, NULL, NULL);
+    if (SUCCEEDED(hr) && (vr.vt & VT_ARRAY) && vr.parray &&
+        SafeArrayGetDim(vr.parray) == 1 && SafeArrayGetElemsize(vr.parray) == 1) {
+        LONG lb = 0, ub = -1;
+        uint8_t *raw = NULL;
+
+        if (SUCCEEDED(SafeArrayGetLBound(vr.parray, 1, &lb)) &&
+            SUCCEEDED(SafeArrayGetUBound(vr.parray, 1, &ub)) &&
+            ub - lb + 1 > 1 &&
+            SUCCEEDED(SafeArrayAccessData(vr.parray, (void **)&raw))) {
+            int n = (int)(ub - lb + 1) - 1;   /* skip the completion code */
+
+            if (n > (int)sizeof(rsp.data))
+                n = (int)sizeof(rsp.data);
+            memcpy(rsp.data, raw + 1, n);
+            rsp.data_len = n;
+            SafeArrayUnaccessData(vr.parray);
+        }
+    }
+    VariantClear(&vr);
+
+    result = &rsp;
+
+out:
+    if (pOutInst) pOutInst->lpVtbl->Release(pOutInst);
     if (pInInst) pInInst->lpVtbl->Release(pInInst);
     if (pInDef) pInDef->lpVtbl->Release(pInDef);
-    if (pOutInst) pOutInst->lpVtbl->Release(pOutInst);
     if (pClass) pClass->lpVtbl->Release(pClass);
-    return &rsp;
+    if (bstr_meth) SysFreeString(bstr_meth);
+    if (bstr_class) SysFreeString(bstr_class);
+    return result;
 }
 
 struct ipmi_intf ipmi_wmi_intf = {
