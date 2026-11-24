@@ -125,6 +125,7 @@ int ipmi_parse_hex(const char *str, uint8_t *out, int size);
 void printbuf(const uint8_t * buf, int len, const char * desc);
 uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);
+FILE * ipmi_open_file_bin(const char * file, int rw);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
@@ -208,8 +209,12 @@ uint8_t *array_byteswap(uint8_t *buffer, size_t length);
 uint8_t *array_ntoh(uint8_t *buffer, size_t length);
 uint8_t *array_letoh(uint8_t *buffer, size_t length);
 
+/* Text files (one record per line, read with fgets/fprintf) */
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
+/* Binary files (raw records read/written with fread/fwrite) */
+#define ipmi_open_file_bin_read(file)	ipmi_open_file_bin(file, 0)
+#define ipmi_open_file_bin_write(file)	ipmi_open_file_bin(file, 1)
 
 #ifndef __min
 # define __min(a, b)  ((a) < (b) ? (a) : (b))

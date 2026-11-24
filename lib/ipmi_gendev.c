@@ -197,7 +197,7 @@ ipmi_gendev_read_file(
       FILE *fp;
    
       /* now write to file */
-      fp = ipmi_open_file_write(ofile);
+      fp = ipmi_open_file_bin_write(ofile);
 
       if(fp)
       {
@@ -368,8 +368,8 @@ ipmi_gendev_write_file(
       FILE *fp;
       uint32_t fileLength = 0;
    
-      /* now write to file */
-      fp = ipmi_open_file_read(ofile);
+      /* now read from file */
+      fp = ipmi_open_file_bin_read(ofile);
       
       if(fp)
       {

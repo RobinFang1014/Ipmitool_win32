@@ -2322,7 +2322,9 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 	}
 
 	if (savefile) {
-		fp = ipmi_open_file_write(savefile);
+		/* "sel writeraw" stores raw 16-byte records, "sel save" text */
+		fp = binary ? ipmi_open_file_bin_write(savefile)
+		            : ipmi_open_file_write(savefile);
 	}
 
 	while (next_id != 0xffff) {
@@ -2624,7 +2626,7 @@ ipmi_sel_readraw(struct ipmi_intf * intf, const char * inputfile)
 	int ret = 0;
 	FILE* fp = 0;
 
-	fp = ipmi_open_file(inputfile, 0);
+	fp = ipmi_open_file_bin_read(inputfile);
 	if (fp)
 	{
 		size_t bytesRead;
