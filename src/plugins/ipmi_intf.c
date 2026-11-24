@@ -410,6 +410,26 @@ ipmi_intf_socket_wait(struct ipmi_intf * intf, int timeout_sec)
 #endif
 }
 
+/* ipmi_intf_report_no_response  -  the first request of a LAN session
+ * (Get Channel Authentication Capabilities) got no answer at all
+ *
+ * IPMI runs over UDP, so a wrong address, a BMC that is off, IPMI over
+ * LAN being disabled or a firewall do not fail in connect(); they all
+ * end up here as "no answer". Say so, instead of only "Unable to
+ * establish ... session". Not printed after Ctrl+C.
+ */
+void
+ipmi_intf_report_no_response(struct ipmi_intf * intf)
+{
+	if (ipmi_is_interrupted())
+		return;
+	lprintf(LOG_ERR, "No response from %s (UDP port %d). Check the BMC "
+		"address, that the BMC is on and IPMI over LAN is enabled, "
+		"and that UDP port %d is not blocked.",
+		intf->ssn_params.hostname ? intf->ssn_params.hostname : "BMC",
+		intf->ssn_params.port, intf->ssn_params.port);
+}
+
 int
 ipmi_intf_socket_connect(struct ipmi_intf * intf)
 {

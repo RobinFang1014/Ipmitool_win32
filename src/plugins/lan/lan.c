@@ -1455,6 +1455,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_INFO, "Get Auth Capabilities command failed");
+		ipmi_intf_report_no_response(intf);
 		return -1;
 	}
 	if (verbose > 2)

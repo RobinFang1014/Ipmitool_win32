@@ -2710,6 +2710,7 @@ ipmi_get_auth_capabilities_cmd(
 
 		if (!rsp) {
 			lprintf(LOG_INFO, "Get Auth Capabilities error");
+			ipmi_intf_report_no_response(intf);
 			return 1;
 		}
 		if (rsp->ccode) {
