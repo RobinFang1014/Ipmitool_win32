@@ -700,7 +700,7 @@ parsed_guid_t
 ipmi_guid2str(char *str, const void *data, ipmi_guid_mode_t mode)
 {
 	parsed_guid_t guid;
-	guid = ipmi_parse_guid(data, mode);
+	guid = ipmi_parse_guid((void *)data, mode); /* only reads data */
 
 	if (GUID_DUMP == guid.mode) {
 		sprintf(str, "%s", buf2str(data, sizeof(ipmi_guid_t)));

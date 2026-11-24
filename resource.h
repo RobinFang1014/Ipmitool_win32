@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ 產生的 Include 檔案。
-// 由 Resource.rc 使用
+// Microsoft Visual C++ generated include file.
+// Used by Resource.rc
 //
 #define IDR_TEXT_DATA1                  101
 
