@@ -454,6 +454,22 @@ ipmi_pef_print_field(const char * fmt[2], const char * label, unsigned long val)
 	first_field = 0;
 }
 
+/* Same as ipmi_pef_print_field(), for "%s" formats. The string pointer
+ * must not go through "unsigned long": that is 32 bits on 64-bit Windows,
+ * and the cut pointer crashed printf() (exe image and heap are above 4 GB). */
+static void
+ipmi_pef_print_field_str(const char * fmt[2], const char * label, const char * val)
+{
+	if (verbose)
+		printf(fmt[0], KYWD_LENGTH, label, val);
+	else if (first_field)
+		printf(&fmt[1][2], val);	/* skip field separator */
+	else
+		printf(fmt[1], val);
+
+	first_field = 0;
+}
+
 void
 ipmi_pef_print_dec(const char * text, uint32_t val)
 {	/* unsigned */
@@ -475,7 +491,7 @@ ipmi_pef_print_hex(const char * text, uint32_t val)
 void 
 ipmi_pef_print_str(const char * text, const char * val)
 {	/* string */
-	ipmi_pef_print_field(pef_fld_fmts[F_STR], text, (unsigned long)val);
+	ipmi_pef_print_field_str(pef_fld_fmts[F_STR], text, val);
 }
 
 void 
