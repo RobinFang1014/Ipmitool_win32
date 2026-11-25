@@ -1511,6 +1511,11 @@ static size_t mem_getline(char** lineptr, size_t* n, const char** pCurrent, cons
 
 	size_t line_len = next_line - start;
 
+	// 將目前的記憶體指標往後移，供下一次讀取
+	// (before malloc: if malloc fails, the caller skips this line instead
+	// of asking for the same line again forever)
+	*pCurrent = next_line;
+
 	// 分配記憶體給 lineptr (模擬 getline 的行為)
 	*lineptr = malloc(line_len + 1);
 	if (!*lineptr) return 0;
@@ -1520,8 +1525,6 @@ static size_t mem_getline(char** lineptr, size_t* n, const char** pCurrent, cons
 
 	if (n) *n = line_len;
 
-	// 將目前的記憶體指標往後移，供下一次讀取
-	*pCurrent = next_line;
 	return line_len;
 }
 
@@ -1609,8 +1612,11 @@ static int oem_info_list_load(oem_valstr_list_t** list)
 		/* Adjust to real line length, don't count the indentation */
 		len = strnlen(line + IANA_NAME_OFFSET, len - IANA_NAME_OFFSET);
 
-		/* Don't count the trailing newline */
-		if (line[IANA_NAME_OFFSET + len - 1] == '\n') {
+		/* Don't count the trailing newline, LF or CRLF: a CRLF copy of the
+		 * registry (git autocrlf) left a '\r' at the end of every name,
+		 * and "  OEM (%s) Record" then printed as ") Record (Dell Inc." */
+		while (len > 0 && (line[IANA_NAME_OFFSET + len - 1] == '\n' ||
+		                   line[IANA_NAME_OFFSET + len - 1] == '\r')) {
 			--len;
 		}
 
