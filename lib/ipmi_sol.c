@@ -94,6 +94,12 @@ static struct timeval _start_keepalive;
 #if defined(_WIN32)
 static HANDLE         _stdin_handle = INVALID_HANDLE_VALUE;
 static DWORD          _saved_console_mode = 0;
+static HANDLE         _stdout_handle = INVALID_HANDLE_VALUE;
+static DWORD          _saved_output_mode = 0;
+static int            _output_mode_saved = 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#  define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+# endif
 #else
 static struct termios _saved_tio;
 #endif
@@ -1197,6 +1203,48 @@ ipmi_sol_append_extended_key(uint8_t *buffer, int *length, int max_length,
 	case 83: /* Delete */
 		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[3~");
 		break;
+	/*
+	 * Function keys, needed e.g. to enter BIOS setup over SOL. Same
+	 * sequences as xterm sends, i.e. what ipmitool passes on from the
+	 * terminal on Linux. _getch() key codes: F1-F10 = 59-68,
+	 * F11/F12 = 133/134.
+	 */
+	case 59: /* F1 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOP");
+		break;
+	case 60: /* F2 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOQ");
+		break;
+	case 61: /* F3 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOR");
+		break;
+	case 62: /* F4 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOS");
+		break;
+	case 63: /* F5 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[15~");
+		break;
+	case 64: /* F6 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[17~");
+		break;
+	case 65: /* F7 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[18~");
+		break;
+	case 66: /* F8 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[19~");
+		break;
+	case 67: /* F9 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[20~");
+		break;
+	case 68: /* F10 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[21~");
+		break;
+	case 133: /* F11 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[23~");
+		break;
+	case 134: /* F12 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[24~");
+		break;
 	default:
 		break;
 	}
@@ -1232,6 +1280,11 @@ leave_raw_mode(void)
 	if (!_in_raw_mode)
 		return;
 #if defined(_WIN32)
+	/* restore the output mode first, so it is done even if stdin fails */
+	if (_output_mode_saved) {
+		SetConsoleMode(_stdout_handle, _saved_output_mode);
+		_output_mode_saved = 0;
+	}
 	if (!SetConsoleMode(_stdin_handle, _saved_console_mode)) {
 		lprintf(LOG_ERR, "SetConsoleMode failed: %lu", GetLastError());
 		return;
@@ -1275,6 +1328,24 @@ enter_raw_mode(void)
 		return;
 	}
 	_in_raw_mode = 1;
+
+	/*
+	 * The remote console (BIOS, Linux) sends ANSI/VT escape sequences for
+	 * colors and cursor movement. A classic console window shows them as
+	 * text ("<-[0m") unless VT processing is on for the output. Not an
+	 * error if this fails (older Windows, output not a console).
+	 */
+	_stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (_stdout_handle != INVALID_HANDLE_VALUE && _stdout_handle != NULL &&
+	    GetConsoleMode(_stdout_handle, &_saved_output_mode)) {
+		_output_mode_saved = 1;
+		if (!SetConsoleMode(_stdout_handle, _saved_output_mode |
+				ENABLE_PROCESSED_OUTPUT |
+				ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+			lprintf(LOG_DEBUG, "VT output processing not available: %lu",
+					GetLastError());
+		}
+	}
 #else
 	struct termios tio;
 	if (tcgetattr(fileno(stdin), &tio) == -1) {
