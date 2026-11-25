@@ -94,6 +94,12 @@ static struct timeval _start_keepalive;
 #if defined(_WIN32)
 static HANDLE         _stdin_handle = INVALID_HANDLE_VALUE;
 static DWORD          _saved_console_mode = 0;
+static HANDLE         _stdout_handle = INVALID_HANDLE_VALUE;
+static DWORD          _saved_output_mode = 0;
+static int            _output_mode_saved = 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#  define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+# endif
 #else
 static struct termios _saved_tio;
 #endif
@@ -1274,6 +1280,11 @@ leave_raw_mode(void)
 	if (!_in_raw_mode)
 		return;
 #if defined(_WIN32)
+	/* restore the output mode first, so it is done even if stdin fails */
+	if (_output_mode_saved) {
+		SetConsoleMode(_stdout_handle, _saved_output_mode);
+		_output_mode_saved = 0;
+	}
 	if (!SetConsoleMode(_stdin_handle, _saved_console_mode)) {
 		lprintf(LOG_ERR, "SetConsoleMode failed: %lu", GetLastError());
 		return;
@@ -1317,6 +1328,24 @@ enter_raw_mode(void)
 		return;
 	}
 	_in_raw_mode = 1;
+
+	/*
+	 * The remote console (BIOS, Linux) sends ANSI/VT escape sequences for
+	 * colors and cursor movement. A classic console window shows them as
+	 * text ("<-[0m") unless VT processing is on for the output. Not an
+	 * error if this fails (older Windows, output not a console).
+	 */
+	_stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (_stdout_handle != INVALID_HANDLE_VALUE && _stdout_handle != NULL &&
+	    GetConsoleMode(_stdout_handle, &_saved_output_mode)) {
+		_output_mode_saved = 1;
+		if (!SetConsoleMode(_stdout_handle, _saved_output_mode |
+				ENABLE_PROCESSED_OUTPUT |
+				ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+			lprintf(LOG_DEBUG, "VT output processing not available: %lu",
+					GetLastError());
+		}
+	}
 #else
 	struct termios tio;
 	if (tcgetattr(fileno(stdin), &tio) == -1) {
