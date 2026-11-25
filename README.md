@@ -44,6 +44,17 @@ This Windows port was assisted by AI tools, including OpenAI Codex, Google Gemin
 
 - Assisted in fixing `sel time set` applying the time zone offset twice, which made the BMC clock 8 or 16 hours off.
 - Assisted in replacing the long Windows time zone name in time output with a short abbreviation (e.g. `TST`, or `UTC` with `-Z`).
+- Assisted in fixing `WORDS_BIGENDIAN` being defined as 0, which made the x64 build use the big-endian bit-field layouts.
+- Assisted in packing the DCMI / Node Manager structures on MSVC (wrong `dcmi power reading` values; `nm policy add` sent shifted data).
+- Assisted in opening binary files in binary mode (`sdr dump`, `sdr fill file`, `-S`, `sel writeraw` / `readraw`, `fru internaluse`, `gendev`, `ekanalyzer`).
+- Assisted in fixing struct layouts that differed from GCC: `#pragma pack(0)` is ignored by MSVC, and the Dell LOM MAC record (`delloem mac`) had the wrong size. All structs were compared between MSVC and GCC.
+- Assisted in making Ctrl+C close the BMC session on the main thread instead of a second thread.
+- Assisted in showing the real reason for network errors, and a "No response from <host>" hint when the BMC does not answer.
+- Assisted in removing compatibility macros that renamed struct members (e.g. `intf->close`).
+- Assisted in fixing a `pef` crash on 64-bit Windows and clearing all compiler warnings.
+- Assisted in fixing WMI error handling: failures are reported instead of being returned as empty successful responses, bridged requests are refused instead of being sent to the BMC, and the reason is shown when WMI cannot be opened.
+- Assisted in removing the CR left at the end of IANA vendor names.
+- Assisted in sending F1–F12 and turning on VT output processing in SOL.
 
 ### 中文分工
 
@@ -61,15 +72,26 @@ This Windows port was assisted by AI tools, including OpenAI Codex, Google Gemin
 
 - 協助修正 `sel time set` 重複套用時區偏移，導致 BMC 時間差 8 或 16 小時的問題。
 - 協助將時間顯示中過長的 Windows 時區名稱改為縮寫（例如 `TST`；加 `-Z` 時顯示 `UTC`）。
+- 協助修正 `WORDS_BIGENDIAN` 被定義成 0，導致 x64 版使用 big-endian bit-field 排列的問題。
+- 協助在 MSVC 上 pack DCMI / Node Manager 結構（`dcmi power reading` 數值錯誤；`nm policy add` 送出錯位的資料）。
+- 協助將 binary 檔改用 binary mode 開啟（`sdr dump`、`sdr fill file`、`-S`、`sel writeraw` / `readraw`、`fru internaluse`、`gendev`、`ekanalyzer`）。
+- 協助修正與 GCC 不一致的 struct 排列：MSVC 會忽略 `#pragma pack(0)`，Dell LOM MAC record（`delloem mac`）大小錯誤。所有 struct 都已比對過 MSVC 與 GCC 的排列。
+- 協助讓 Ctrl+C 由主執行緒關閉 BMC session，而不是在另一個執行緒處理。
+- 協助在網路錯誤時顯示實際原因，並在 BMC 沒有回應時提示「No response from <host>」。
+- 協助移除會把 struct 成員改名的相容性 macro（例如 `intf->close`）。
+- 協助修正 64-bit Windows 上 `pef` 的 crash，並清除所有編譯器 warning。
+- 協助修正 WMI 的錯誤處理：失敗時回報錯誤，不再回傳空的成功回應；拒絕 bridging 請求，不再送給 BMC；無法開啟 WMI 時說明原因。
+- 協助移除 IANA 廠商名稱結尾多出的 CR。
+- 協助在 SOL 中送出 F1–F12，並開啟 VT 輸出處理。
 
 ## IANA Enterprise Numbers / IANA 企業編號資料
 
-The embedded `win32/enterprise-numbers.txt` data comes from IANA Private Enterprise Numbers:
+The embedded `enterprise-numbers.txt` data comes from IANA Private Enterprise Numbers:
 https://www.iana.org/assignments/enterprise-numbers/
 
 The Windows build embeds this file as a resource so the executable can load the registry data without requiring an external text file.
 
-內嵌的 `win32/enterprise-numbers.txt` 資料來自 IANA Private Enterprise Numbers：
+內嵌的 `enterprise-numbers.txt` 資料來自 IANA Private Enterprise Numbers：
 https://www.iana.org/assignments/enterprise-numbers/
 
 Windows 版本會將此檔案內嵌成 resource，讓執行檔不需要外部文字檔也能讀取 registry data。
