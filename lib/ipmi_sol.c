@@ -1197,6 +1197,48 @@ ipmi_sol_append_extended_key(uint8_t *buffer, int *length, int max_length,
 	case 83: /* Delete */
 		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[3~");
 		break;
+	/*
+	 * Function keys, needed e.g. to enter BIOS setup over SOL. Same
+	 * sequences as xterm sends, i.e. what ipmitool passes on from the
+	 * terminal on Linux. _getch() key codes: F1-F10 = 59-68,
+	 * F11/F12 = 133/134.
+	 */
+	case 59: /* F1 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOP");
+		break;
+	case 60: /* F2 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOQ");
+		break;
+	case 61: /* F3 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOR");
+		break;
+	case 62: /* F4 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1bOS");
+		break;
+	case 63: /* F5 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[15~");
+		break;
+	case 64: /* F6 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[17~");
+		break;
+	case 65: /* F7 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[18~");
+		break;
+	case 66: /* F8 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[19~");
+		break;
+	case 67: /* F9 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[20~");
+		break;
+	case 68: /* F10 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[21~");
+		break;
+	case 133: /* F11 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[23~");
+		break;
+	case 134: /* F12 */
+		ipmi_sol_append_console_sequence(buffer, length, max_length, "\x1b[24~");
+		break;
 	default:
 		break;
 	}
